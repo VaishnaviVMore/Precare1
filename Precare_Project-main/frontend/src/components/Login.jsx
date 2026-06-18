@@ -1,0 +1,214 @@
+// src/components/Login.jsx
+import React, { useState, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import LoginImage from "../assets/LoginImage.png";
+import logo from "../assets/logo.png";
+
+function Login({ setUser }) {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    identifier: "",
+    password: "",
+    rememberMe: false,
+  });
+
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const googleBtnRef = useRef(null);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/login", {
+        identifier: form.identifier,
+        password: form.password,
+      });
+
+      setUser(res.data.user);
+
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      navigate("/home");
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Login failed"
+      );
+    }
+  };
+
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+
+      const userData = {
+        username: decoded.name,
+        email: decoded.email,
+        picture: decoded.picture,
+        googleId: decoded.sub,
+      };
+
+      await axios.post("http://localhost:5000/api/google-login", userData);
+
+      setUser(userData);
+      navigate("/home");
+    } catch (err) {
+      setError("Google login failed");
+    }
+  };
+
+  return (
+    <div className="flex w-full h-screen">
+
+      {/* Left Image */}
+      <div className="w-1/2 h-full overflow-hidden">
+        <img
+          src={LoginImage}
+          alt="Login"
+          className="w-full h-full object-cover object-[center_35%]"
+        />
+      </div>
+
+      {/* Right Side */}
+      <div className="w-1/2 h-full flex items-center justify-center bg-gradient-to-r from-[#01030a] via-[#081a3a] to-[#dbeafe]">
+
+        <div className="w-full max-w-md bg-white border border-blue-200 rounded-2xl p-10 shadow-xl">
+
+          {/* Logo */}
+          <div className="flex justify-center mb-3">
+            <img src={logo} alt="logo" className="w-20 h-20 rounded-full" />
+          </div>
+
+          <h2 className="text-3xl font-semibold mb-6 text-center text-blue-800">
+            Log in
+          </h2>
+
+          {error && (
+            <p className="text-red-500 mb-4 text-center">{error}</p>
+          )}
+
+          {/* ✅ Google Button FIXED */}
+          <div className="mb-5 relative">
+
+            {/* Custom UI Button */}
+            <button
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-full py-3 hover:shadow-md transition bg-white relative z-10"
+            >
+              <img
+                src="https://developers.google.com/identity/images/g-logo.png"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              <span className="text-gray-700 font-medium">
+                Continue with Google
+              </span>
+            </button>
+
+            {/* Invisible Google Button Overlay */}
+            <div className="absolute inset-0 opacity-0 cursor-pointer z-20">
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={() => setError("Google login failed")}
+                useOneTap
+              />
+            </div>
+
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center mb-5">
+            <hr className="flex-grow border-gray-300" />
+            <span className="px-3 text-gray-400 text-sm">OR</span>
+            <hr className="flex-grow border-gray-300" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            <input
+              type="text"
+              name="identifier"
+              placeholder="Email address or username"
+              value={form.identifier}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+              required
+            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full p-3 pr-12 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                required
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
+
+            <div className="flex justify-between text-sm">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={form.rememberMe}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                Remember me
+              </label>
+
+              <Link to="/forget-password" className="text-blue-700">
+                Forget password
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-full"
+            >
+              Log in
+            </button>
+          </form>
+
+          <p className="text-center text-sm mt-6">
+            Don’t have an account?{" "}
+            <Link to="/register" className="text-blue-700">
+              Sign up
+            </Link>
+          </p>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Login;
