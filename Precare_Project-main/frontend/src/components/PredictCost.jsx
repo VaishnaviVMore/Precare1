@@ -7,7 +7,7 @@ import "chart.js/auto";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const PredictCost = () => {
+const PredictCost = ({ onPrediction }) => {
   const [formData, setFormData] = useState({
     age: "",
     gender: "",
@@ -48,8 +48,15 @@ const PredictCost = () => {
         smoking: "No",
       });
 
-      setResult(res.data.estimated_cost);
-      setShowPopup(true);
+      const cost = Number(res.data.estimated_cost);
+
+        setResult(cost);
+
+        if (onPrediction) {
+          onPrediction(cost);
+        }
+
+        setShowPopup(true);
     } catch (error) {
       console.error(error);
       setResult("Error fetching prediction");

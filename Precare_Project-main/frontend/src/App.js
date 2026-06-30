@@ -1,6 +1,14 @@
 // src/App.js
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
+import FloatingChatbot from "./components/FloatingChatbot";
 
 // Layout
 import Navbar from "./components/Navbar";
@@ -9,7 +17,6 @@ import Footer from "./components/Footer";
 // Auth
 import Login from "./components/Login";
 import Register from "./components/Register";
-import ForgotPassword from "./components/ForgotPassword";
 
 // Sections
 import Hero3D from "./components/Hero3D";
@@ -23,11 +30,7 @@ import Contact from "./components/Contact";
 
 function App() {
   const [predictedCost, setPredictedCost] = useState(null);
-
-  // ✅ user state
   const [user, setUser] = useState(null);
-
-  // ✅ loading state
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
@@ -35,7 +38,7 @@ function App() {
 
   const hideNavPages = ["/login", "/register", "/forget-password"];
 
-  // Load user AFTER initial render
+  // Load user after initial render
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -61,7 +64,7 @@ function App() {
     navigate("/login");
   };
 
-  // About scroll handler
+  // Scroll to About section
   const handleAboutClick = () => {
     if (location.pathname !== "/") {
       navigate("/");
@@ -81,9 +84,9 @@ function App() {
   };
 
   if (loading) return null;
+
   return (
     <div className="flex flex-col min-h-screen">
-
       {/* Navbar */}
       {user && !hideNavPages.includes(location.pathname) && (
         <Navbar
@@ -95,8 +98,7 @@ function App() {
 
       <main className="flex-grow">
         <Routes>
-
-          {/* ✅ ONLY CHANGE HERE */}
+          {/* ROOT */}
           <Route
             path="/"
             element={
@@ -111,7 +113,6 @@ function App() {
           {/* AUTH */}
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register setUser={setUser} />} />
-          <Route path="/forget-password" element={<ForgotPassword />} />
 
           {/* HOME (protected) */}
           <Route
@@ -135,7 +136,9 @@ function App() {
           {/* PROTECTED ROUTES */}
           <Route
             path="/treatment-guide"
-            element={user ? <TreatmentGuide /> : <Navigate to="/login" replace />}
+            element={
+              user ? <TreatmentGuide /> : <Navigate to="/login" replace />
+            }
           />
 
           <Route
@@ -177,13 +180,14 @@ function App() {
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-
         </Routes>
       </main>
 
       {/* Footer */}
       {user && !hideNavPages.includes(location.pathname) && <Footer />}
 
+      {/* Floating Chatbot (GLOBAL POPUP) */}
+      {user && <FloatingChatbot />}
     </div>
   );
 }

@@ -1,259 +1,544 @@
 // src/components/Hospitals.jsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { filterByPredictedCostRange } from "../utils/hospitalUtils";
+import {
+  STATES,
+  STATE_CITY_MAP,
+  CITY_STATE_MAP,
+  INSURANCES,
+  SORT_OPTIONS,
+  parseCost,
+  parseInsuranceList,
+  calculateRecommendationScore,
+} from "../utils/hospitalUtils";
 
-// ✅ Import images
-import apolloImg from "../assets/hospitals/apollo.jpeg";
-import HomiImg from "../assets/hospitals/Homi.jpeg";
-import hcgImg from "../assets/hospitals/hcg.jpeg";
-import kghImg from "../assets/hospitals/kgh.jpeg";
-import lionImg from "../assets/hospitals/lion.jpeg";
-import americanImg from "../assets/hospitals/american.jpeg";
-import nagaImg from "../assets/hospitals/naga.jpeg";
-import yvraoImg from "../assets/hospitals/yvrao.jpeg";
-import raviImg from "../assets/hospitals/ravi.jpeg";
-import nriImg from "../assets/hospitals/nri.jpeg";
-import gghImg from "../assets/hospitals/ggh.jpeg";
-import rameshImg from "../assets/hospitals/ramesh.jpeg";
-import tirupatiImg from "../assets/hospitals/tirupati.jpeg";
-import heliosImg from "../assets/hospitals/helios.jpeg";
+// ---------------- Images ----------------
+import hospitalImages from "../utils/hospitalImageMap";
 
-// ✅ Image Mapping
-const hospitalImages = {
-  "Apollo Cancer Centre Visakhapatnam": apolloImg,
-  "Homi Bhabha Cancer Hospital & Research Centre": HomiImg,
-  "HCG Pinnacle Oncology Centre": hcgImg,
-  "King George Hospital Cancer Unit": kghImg,
-  "Lions Cancer Treatment & Research Centre": lionImg,
-  "American Oncology Institute Vijayawada": americanImg,
-  "Apollo Cancer Centre Vijayawada": apolloImg,
-  "Nagarjuna Cancer Centre": nagaImg,
-  "Dr Y V Rao Cancer Centre": yvraoImg,
-  "Ravis American Cancer Care": raviImg,
-  "NRI Medical College & General Hospital Oncology Department": nriImg,
-  "Government General Hospital Guntur Oncology": gghImg,
-  "Ramesh Hospitals Oncology Unit": rameshImg,
-  "Apollo Specialty Hospital Tirupati Oncology": tirupatiImg,
-  "Helios Hospitals Oncology": heliosImg,
-};
+
 
 const Hospitals = ({ predictedCost }) => {
+
   const [hospitalData, setHospitalData] = useState([]);
 
-  const [selectedSort, setSelectedSort] = useState("None");
-  const [selectedState, setSelectedState] = useState("All");
-  const [selectedCity, setSelectedCity] = useState("All");
-  const [selectedInsurance, setSelectedInsurance] = useState("All");
+  const [selectedSort, setSelectedSort] =
+    useState("Recommendation");
+
+  const [selectedState, setSelectedState] =
+    useState("All");
+
+  const [selectedCity, setSelectedCity] =
+    useState("All");
+
+  const [selectedInsurance, setSelectedInsurance] =
+    useState("All");
 
   const scrollRef = useRef(null);
 
   const scrollLeft = () => {
-    scrollRef.current.scrollBy({ left: -320, behavior: "smooth" });
+
+    if (!scrollRef.current) return;
+
+    scrollRef.current.scrollBy({
+      left: -320,
+      behavior: "smooth",
+    });
+
   };
 
   const scrollRight = () => {
-    scrollRef.current.scrollBy({ left: 320, behavior: "smooth" });
+
+    if (!scrollRef.current) return;
+
+    scrollRef.current.scrollBy({
+      left: 320,
+      behavior: "smooth",
+    });
+
   };
 
-  // ✅ Fetch Data
+  // ---------------- Fetch Google Sheet ----------------
+
   useEffect(() => {
-    const fetchData = async () => {
+
+    const fetchHospitals = async () => {
+
       try {
-        const res = await fetch(
-          "https://docs.google.com/spreadsheets/d/e/2PACX-1vSys1fOILe-7t5BpvRHZZ7guP4aIk3xwAgKcIX53v3rcYT2trOMRioydJKi65wXmFSEWuOtugNHUHeu/pub?output=csv"
+
+        const response = await fetch(
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4XmKh0Iv4inl7jxtQoHyXfgfH68_DCbs8t2_qcpif2-I873QCqSNwU9g4OlfzAPxMTKxTvw3BrtQ8/pub?output=csv"
         );
 
-        const text = await res.text();
+        const csv = await response.text();
 
-        const rows = text.split("\n").map((row) =>
-          row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-        );
+        const rows = csv
+          .split("\n")
+          .map((row) =>
+            row.split(
+              /,(?=(?:(?:[^"]*"){2})*[^"]*$)/
+            )
+          );
+
         const headers = rows[0];
 
-        const data = rows.slice(1).map((row, index) => {
+        const hospitals = rows.slice(1).map((row, index) => {
+
           let obj = {};
+
           headers.forEach((header, i) => {
-            obj[header.trim()] = row[i];
+
+            obj[header.trim()] =
+              row[i]?.replace(/^"|"$/g, "").trim() || "";
+
           });
 
-          const hospitalName = obj["Hospital Name"]?.trim();
+          const hospitalName =
+            obj["Hospital Name"];
 
           return {
+
             id: index + 1,
+
             name: hospitalName,
+
             state: obj["State"],
+
             city: obj["City"],
-            cost: parseInt(obj["Treatment cost"]?.split("-")[0]) || 0,
-            insurance: obj["Insurance List"]
-              ? obj["Insurance List"].split(",")
-              : [],
-            rating: parseFloat(obj["Rating (1–5)"]) || 4,
-            map: obj["Google Map Location Link"] || "#",
-            website: obj["Website Link"],
-            image:
-              hospitalImages[hospitalName] ||
-              "https://via.placeholder.com/300",
+
+            cost: parseCost(
+              obj["Average cost"]
+            ),
+
+            insurance: parseInsuranceList(
+              obj["Insurance List"]
+            ),
+
+            rating:
+              parseFloat(
+                obj["Rating (1–5)"] ||
+                  obj["Rating (1â€“5)"] ||
+                  obj["Rating"]
+              ) || 4,
+
+            map:
+              obj[
+                "Google Map Location Link"
+              ] || "#",
+
+            website:
+              obj["Website Link"] || "#",
+
+            image: hospitalImages[hospitalName]
+            ? `/hospitals/${hospitalImages[hospitalName]}`
+            : "https://via.placeholder.com/300x200?text=Hospital",
+
           };
+
         });
 
-        setHospitalData(data);
-      } catch (err) {
-        console.error("Error fetching data:", err);
+        setHospitalData(hospitals);
+
+      } catch (error) {
+
+        console.error(
+          "Error fetching hospitals:",
+          error
+        );
+
       }
+
     };
 
-    fetchData();
+    fetchHospitals();
+
   }, []);
+    // ---------------- Cities ----------------
 
-  // ✅ Filters
-  const uniqueStates = ["All", ...new Set(hospitalData.map((h) => h.state))];
+  const availableCities = useMemo(() => {
+    if (selectedState === "All") return [];
 
-  const uniqueCities = [
-    "All",
-    ...new Set(
-      hospitalData
-        .filter((h) => selectedState === "All" || h.state === selectedState)
-        .map((h) => h.city)
-    ),
-  ];
+    return STATE_CITY_MAP[selectedState] || [];
+  }, [selectedState]);
 
-  const uniqueInsurances = [
-    "All",
-    ...new Set(hospitalData.flatMap((h) => h.insurance)),
-  ];
+  // ---------------- Dropdown Handlers ----------------
 
-  let filteredHospitals = hospitalData.filter((h) => {
-    return (
-      (selectedState === "All" || h.state === selectedState) &&
-      (selectedCity === "All" || h.city === selectedCity) &&
-      (selectedInsurance === "All" ||
-        h.insurance.includes(selectedInsurance))
-    );
-  });
+  const handleStateChange = (e) => {
+    const state = e.target.value;
 
-  // ✅ Sorting
-  if (selectedSort === "Name")
-    filteredHospitals.sort((a, b) => a.name.localeCompare(b.name));
+    setSelectedState(state);
+    setSelectedCity("All");
+  };
 
-  if (selectedSort === "CostLow")
-    filteredHospitals.sort((a, b) => a.cost - b.cost);
+  const handleCityChange = (e) => {
+    const city = e.target.value;
 
-  if (selectedSort === "CostHigh")
-    filteredHospitals.sort((a, b) => b.cost - a.cost);
+    setSelectedCity(city);
 
-  if (selectedSort === "Rating")
-    filteredHospitals.sort((a, b) => b.rating - a.rating);
+    if (city === "All") return;
+
+    if (CITY_STATE_MAP[city]) {
+      setSelectedState(CITY_STATE_MAP[city]);
+    }
+  };
+
+  const handleInsuranceChange = (e) => {
+    setSelectedInsurance(e.target.value);
+  };
+
+  const handleSortChange = (e) => {
+    setSelectedSort(e.target.value);
+  };
+
+  // ---------------- Filters ----------------
+
+  const filteredHospitals = useMemo(() => {
+
+    let hospitals = [...hospitalData];
+
+    // ---------- State ----------
+
+    if (selectedState !== "All") {
+      hospitals = hospitals.filter(
+        (hospital) =>
+          hospital.state === selectedState
+      );
+    }
+
+    // ---------- City ----------
+
+    if (selectedCity !== "All") {
+      hospitals = hospitals.filter(
+        (hospital) =>
+          hospital.city === selectedCity
+      );
+    }
+
+    // ---------- Insurance ----------
+
+    if (selectedInsurance !== "All") {
+
+      hospitals = hospitals.filter((hospital) =>
+        hospital.insurance.some(
+          (insurance) =>
+            insurance === selectedInsurance
+        )
+      );
+
+    }
+    
+
+    // ---------- Recommendation Score ----------
+
+    hospitals = hospitals.map((hospital) => ({
+
+      ...hospital,
+
+      recommendationScore:
+        calculateRecommendationScore(
+          hospital,
+          {
+            state: selectedState,
+            city: selectedCity,
+            insurance: selectedInsurance,
+          },
+          predictedCost
+        ),
+
+    }));
+
+    // ---------- Sorting ----------
+
+    switch (selectedSort) {
+
+      case "Recommendation":
+
+        hospitals.sort(
+          (a, b) =>
+            b.recommendationScore -
+            a.recommendationScore
+        );
+
+        break;
+
+      case "Name":
+
+        hospitals.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+
+        break;
+
+      case "CostLow":
+
+        hospitals.sort(
+          (a, b) => a.cost - b.cost
+        );
+
+        break;
+
+      case "CostHigh":
+
+        hospitals.sort(
+          (a, b) => b.cost - a.cost
+        );
+
+        break;
+
+      case "Rating":
+
+        hospitals.sort(
+          (a, b) => b.rating - a.rating
+        );
+
+        break;
+
+      case "PredictedCost": {
+        hospitals = filterByPredictedCostRange(
+          hospitals,
+          predictedCost
+        );
+
+        break;
+      }
+
+      default:
+
+        break;
+    }
+
+    return hospitals;
+
+  }, [
+    hospitalData,
+    selectedState,
+    selectedCity,
+    selectedInsurance,
+    selectedSort,
+    predictedCost,
+  ]);
 
   return (
-    <section id="hospitals" className="py-16 px-6 bg-gray-50 min-h-screen">
-      <motion.h2 className="text-4xl font-bold text-center text-purple-800 mb-6">
+
+    <section
+      id="hospitals"
+      className="py-16 px-6 bg-gray-50 min-h-screen"
+    >
+
+      <motion.h2
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-4xl font-bold text-center text-purple-800 mb-8"
+      >
         Recommended Hospitals
       </motion.h2>
 
-      {/* Filters */}
-      <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md mb-8 flex flex-wrap gap-4">
-        <select onChange={(e) => setSelectedSort(e.target.value)}>
-          <option value="None">Sort</option>
-          <option value="Name">Name (A–Z)</option>
-          <option value="CostLow">Cost Low → High</option>
-          <option value="CostHigh">Cost High → Low</option>
-          <option value="Rating">Rating</option>
+      {/* ---------------- Filters ---------------- */}
+
+      <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-10 flex flex-wrap gap-4">
+
+        {/* Sort */}
+
+        <select
+          value={selectedSort}
+          onChange={handleSortChange}
+          className="border rounded-lg px-4 py-2"
+        >
+          {SORT_OPTIONS.map((sort) => (
+            <option
+              key={sort.value}
+              value={sort.value}
+            >
+              {sort.label}
+            </option>
+          ))}
         </select>
 
-        <select onChange={(e) => setSelectedState(e.target.value)}>
-          <option value="All">State</option>
-          {uniqueStates.map((state, i) => (
-            <option key={i} value={state}>
+        {/* State */}
+
+        <select
+          value={selectedState}
+          onChange={handleStateChange}
+          className="border rounded-lg px-4 py-2"
+        >
+          {STATES.map((state) => (
+            <option
+              key={state}
+              value={state}
+            >
               {state}
             </option>
           ))}
         </select>
 
-        {selectedState !== "All" && (
-          <select onChange={(e) => setSelectedCity(e.target.value)}>
-            <option value="All">City</option>
-            {uniqueCities.map((city, i) => (
-              <option key={i} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-        )}
+        {/* City */}
 
-        <select onChange={(e) => setSelectedInsurance(e.target.value)}>
-          <option value="All">Insurance</option>
-          {uniqueInsurances.map((ins, i) => (
-            <option key={i} value={ins}>
-              {ins}
+        <select
+          value={selectedCity}
+          onChange={handleCityChange}
+          className="border rounded-lg px-4 py-2"
+        >
+          <option value="All">
+            All Cities
+          </option>
+
+          {availableCities.map((city) => (
+            <option
+              key={city}
+              value={city}
+            >
+              {city}
             </option>
           ))}
         </select>
-      </div>
 
-      {/* Cards */}
-      <div className="max-w-6xl mx-auto relative">
+        {/* Insurance */}
+
+        <select
+          value={selectedInsurance}
+          onChange={handleInsuranceChange}
+          className="border rounded-lg px-4 py-2"
+        >
+          {INSURANCES.map((insurance) => (
+            <option
+              key={insurance}
+              value={insurance}
+            >
+              {insurance}
+            </option>
+          ))}
+        </select>
+
+      </div>
+            {/* ---------------- Hospital Cards ---------------- */}
+
+      <div className="max-w-7xl mx-auto relative">
+
+        {/* Left Scroll Button */}
+
         <button
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 z-10 bg-white px-3 py-2 rounded-full"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100"
         >
           ◀
         </button>
 
-        <div ref={scrollRef} className="flex gap-6 overflow-x-auto px-10">
-          {filteredHospitals.map((hospital) => (
-            <div
-              key={hospital.id}
-              className="min-w-[300px] bg-white p-4 rounded-xl shadow"
-            >
-              <img
-                src={hospital.image}
-                className="h-40 w-full object-cover rounded-lg"
-                alt={hospital.name}
-              />
+        {/* Cards */}
 
-              <h3 className="font-bold mt-2">{hospital.name}</h3>
-              <p>
-                {hospital.city}, {hospital.state}
-              </p>
+        <div
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto px-12 pb-4 scroll-smooth"
+          style={{ scrollbarWidth: "none" }}
+        >
 
-              <p>₹{hospital.cost}</p>
+          {filteredHospitals.length === 0 ? (
 
-              <p>⭐ {hospital.rating}</p>
-
-              {/* ✅ Links */}
-              <div className="mt-2 flex flex-col gap-1">
-                <a
-                  href={hospital.map}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  View Map
-                </a>
-
-                <a
-                  href={hospital.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-600 hover:underline text-sm"
-                >
-                  Book Appointment
-                </a>
-              </div>
+            <div className="w-full text-center py-20 text-gray-500 text-lg">
+              No hospitals found for the selected filters.
             </div>
-          ))}
+
+          ) : (
+
+            filteredHospitals.map((hospital) => (
+
+              <motion.div
+                key={hospital.id}
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.25 }}
+                className="min-w-[320px] max-w-[320px] bg-white rounded-2xl shadow-lg overflow-hidden flex-shrink-0"
+              >
+
+                {/* Image */}
+
+                <img
+                  src={hospital.image}
+                  alt={hospital.name}
+                  className="w-full h-48 object-cover"
+                />
+
+                {/* Body */}
+
+                <div className="p-5">
+
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    {hospital.name}
+                  </h3>
+
+                  <p className="text-gray-600 text-sm mb-1">
+                    📍 {hospital.city}, {hospital.state}
+                  </p>
+
+                  <p className="text-purple-700 font-semibold mb-1">
+                    Estimated Cost
+                  </p>
+
+                  <p className="text-lg font-bold mb-3">
+                    ₹ {hospital.cost.toLocaleString()}
+                  </p>
+
+                  <div className="flex items-center justify-between mb-4">
+
+                    <span className="text-yellow-500 font-semibold">
+                      ★ {hospital.rating}
+                    </span>
+
+                    {selectedSort === "Recommendation" && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        Recommended
+                      </span>
+                    )}
+
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+
+                    <a
+                      href={hospital.map}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                      View Map
+                    </a>
+
+                    <a
+                      href={hospital.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-green-600 text-white text-center py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                      Book Appointment
+                    </a>
+
+                  </div>
+
+                </div>
+
+              </motion.div>
+
+            ))
+
+          )}
+
         </div>
+
+        {/* Right Scroll Button */}
 
         <button
           onClick={scrollRight}
-          className="absolute right-0 top-1/2 z-10 bg-white px-3 py-2 rounded-full"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100"
         >
           ▶
         </button>
+
       </div>
+
     </section>
+
   );
+
 };
 
 export default Hospitals;

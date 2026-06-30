@@ -7,24 +7,9 @@ import {
   CheckCircle,
   BarChart3,
   Users,
-  HeartPulse,
-  Stethoscope,
   Shield,
-  MapPin,
   Clock,
-  Award,
-  TrendingUp,
-  Activity,
-  Link as LinkIcon,
-  Heart,
 } from "lucide-react";
-
-/* ---------- Doctor image (base64 provided by user) ---------- */
-const DOCTOR_BASE64 =
-  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...(truncated for brevity)...";
-
-
-
 
 /* ---------- Mock / Real-time numbers ---------- */
 const IMPACT_NUMBERS = {
@@ -80,10 +65,12 @@ const STATE_MARKERS = [
 /* ---------- small helper: CountUp ---------- */
 function useCountUp(target, duration = 1500, step = 30) {
   const [value, setValue] = useState(0);
+
   useEffect(() => {
     let start = 0;
     const steps = Math.max(10, Math.floor(duration / step));
     const increment = (target - start) / steps;
+
     let current = start;
     let raf = null;
     let i = 0;
@@ -91,6 +78,7 @@ function useCountUp(target, duration = 1500, step = 30) {
     function tick() {
       i++;
       current += increment;
+
       if (i >= steps) {
         setValue(Math.round(target));
         cancelAnimationFrame(raf);
@@ -98,133 +86,228 @@ function useCountUp(target, duration = 1500, step = 30) {
       } else {
         setValue(Math.round(current));
       }
+
       raf = requestAnimationFrame(tick);
     }
+
     raf = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(raf);
   }, [target, duration, step]);
+
   return value;
 }
+
+/* -------------------- About Component -------------------- */
 
 const About = () => {
   const [search, setSearch] = useState("");
   const [selectedState, setSelectedState] = useState(null);
+
+  /* NEW STATE FOR SERVICE POPUP */
+  const [activeService, setActiveService] = useState(null);
+
   const stateListRef = useRef(null);
 
   const stateMarkers = useMemo(() => STATE_MARKERS, []);
 
-  // Animated numbers
-  const patientsTreated = useCountUp(IMPACT_NUMBERS.patientsTreated, 2000);
-  const newCases = useCountUp(IMPACT_NUMBERS.newCases, 2000);
-  const cancerCenters = useCountUp(IMPACT_NUMBERS.cancerCenters, 2000);
-  const successRate = useCountUp(IMPACT_NUMBERS.successRatePercent, 2000);
-  const researchFunding = useCountUp(IMPACT_NUMBERS.researchFundingCr, 2000);
-  const oncologists = useCountUp(IMPACT_NUMBERS.qualifiedOncologists, 2000);
+  /* Animated Numbers */
 
-  const filteredStates = stateMarkers.filter((s) =>
-    s.state.toLowerCase().includes(search.trim().toLowerCase())
+  const patientsTreated = useCountUp(
+    IMPACT_NUMBERS.patientsTreated,
+    2000
   );
 
-  
+  const newCases = useCountUp(
+    IMPACT_NUMBERS.newCases,
+    2000
+  );
+
+  const cancerCenters = useCountUp(
+    IMPACT_NUMBERS.cancerCenters,
+    2000
+  );
+
+  const successRate = useCountUp(
+    IMPACT_NUMBERS.successRatePercent,
+    2000
+  );
+
+  const researchFunding = useCountUp(
+    IMPACT_NUMBERS.researchFundingCr,
+    2000
+  );
+
+  const oncologists = useCountUp(
+    IMPACT_NUMBERS.qualifiedOncologists,
+    2000
+  );
+
+  const filteredStates = stateMarkers.filter((s) =>
+    s.state
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
+  );
+
+  /* ---------- SERVICE INFORMATION ---------- */
+
+  const servicesData = {
+    prediction: {
+      title: "AI Cost Prediction",
+      description:
+        "PreCare leverages Artificial Intelligence and Machine Learning to estimate the expected cost of cancer treatment based on patient details, cancer type, treatment stage, and historical healthcare data. It enables patients to prepare financially before starting treatment and supports informed healthcare decisions.",
+    },
+
+    hospital: {
+      title: "Hospital Recommendation",
+      description:
+        "Our recommendation system identifies trusted hospitals according to insurance coverage, medical specialization, treatment quality, affordability, and patient location. This allows patients to select the most suitable healthcare provider with confidence and convenience.",
+    },
+
+    insights: {
+      title: "Treatment Cost Insights",
+      description:
+        "PreCare provides a detailed visual breakdown of estimated treatment expenses, including consultation fees, diagnostics, medicines, hospitalization, surgery, and follow-up care. These insights help patients understand where treatment costs are distributed.",
+    },
+
+    awareness: {
+      title: "Cancer Awareness & Guidance",
+      description:
+        "PreCare promotes cancer awareness by providing reliable educational resources on early detection, prevention, symptoms, treatment options, healthy lifestyle practices, and frequently asked questions. Our goal is to empower patients and families throughout their healthcare journey.",
+    },
+  };
+
   const handleSelectState = (stateName) => {
     setSelectedState(stateName);
   };
 
   const mapRef = useRef(null);
- useEffect(() => {
-      const svg = mapRef.current;
-      if (!svg) return;
-
-      const paths = svg.querySelectorAll("path");
-
-      paths.forEach((path) => {
-        const stateName = path.getAttribute("data-name");
-
-        if (stateName) {
-          path.style.fill = "#dadada";
-
-          if (stateName === selectedState) {
-            path.style.fill = "#4f46e5";
-          }
-
-          path.onclick = () => handleSelectState(stateName);
-
-          path.onmouseenter = () => {
-            if (stateName !== selectedState) {
-              path.style.fill = "#ff9800";
-            }
-          };
-
-          path.onmouseleave = () => {
-            if (stateName !== selectedState) {
-              path.style.fill = "#dadada";
-            }
-          };
-        }
-      });
-    }, [selectedState]);
-
     useEffect(() => {
-  if (!selectedState || !stateListRef.current) return;
+    const svg = mapRef.current;
+    if (!svg) return;
 
-  const container = stateListRef.current;
-  const selectedElement = container.querySelector(
-    `[data-state="${selectedState}"]`
-  );
+    const paths = svg.querySelectorAll("path");
 
-  if (selectedElement) {
-    selectedElement.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
+    paths.forEach((path) => {
+      const stateName = path.getAttribute("data-name");
+
+      if (stateName) {
+        path.style.fill = "#dadada";
+
+        if (stateName === selectedState) {
+          path.style.fill = "#4f46e5";
+        }
+
+        path.onclick = () => handleSelectState(stateName);
+
+        path.onmouseenter = () => {
+          if (stateName !== selectedState) {
+            path.style.fill = "#ff9800";
+          }
+        };
+
+        path.onmouseleave = () => {
+          if (stateName !== selectedState) {
+            path.style.fill = "#dadada";
+          }
+        };
+      }
     });
-  }
-}, [selectedState]);
-    
+  }, [selectedState]);
+
+  useEffect(() => {
+    if (!selectedState || !stateListRef.current) return;
+
+    const container = stateListRef.current;
+
+    const selectedElement = container.querySelector(
+      `[data-state="${selectedState}"]`
+    );
+
+    if (selectedElement) {
+      selectedElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [selectedState]);
+
   return (
     <section id="about" className="py-16 px-6 bg-white">
       <div className="max-w-7xl mx-auto space-y-12">
-        {/* --- About Section with Doctor image --- */}
+
+        {/* ---------------- ABOUT PRECARE ---------------- */}
+
         <motion.div
           initial={{ y: 40, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8 }}
-          className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-8 shadow-md"
+          className="bg-gradient-to-br from-white via-purple-50 to-indigo-50 rounded-2xl p-8 shadow-lg"
         >
-          <div className="flex flex-col lg:flex-row items-center gap-8">
+          <div className="flex flex-col lg:flex-row items-center gap-10">
+
+            {/* Doctor Image */}
+
             <div className="flex-shrink-0 w-full lg:w-1/3">
-              <div className="relative">
+
+              <div className="relative group">
+
                 <img
                   src="https://t3.ftcdn.net/jpg/13/95/81/24/360_F_1395812449_i5GaFcGUXoeBJu8pniRFXNQFNWy4aBr2.jpg"
                   alt="Doctor Team"
-                  className="w-full h-auto rounded-2xl object-cover shadow-lg border-2 border-purple-100"
+                  className="w-full rounded-2xl shadow-xl border-4 border-white transition-all duration-500 group-hover:scale-105"
                   style={{ maxHeight: 360 }}
                 />
 
-                <div className="absolute -top-3 -right-3 bg-green-600 text-white px-3 py-2 rounded-xl flex items-center gap-2 shadow-lg">
+                <div className="absolute -top-4 -right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-pulse">
+
                   <Clock className="w-4 h-4" />
-                  <div className="text-sm leading-none">24/7 Support</div>
+
+                  <span className="font-semibold text-sm">
+                    24/7 Support
+                  </span>
+
                 </div>
+
               </div>
+
             </div>
 
+            {/* About Text */}
+
             <div className="flex-1 text-center lg:text-left">
+
               <h2 className="text-4xl font-extrabold text-indigo-800">
                 About PreCare
               </h2>
-              <div className="w-28 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full my-4 mx-auto lg:mx-0"></div>
 
-              <p className="text-gray-700 leading-relaxed">
-                PreCare is your healthcare companion designed to simplify
-                treatment journeys. We combine AI-driven cost estimates, trusted
-                hospital recommendations, and patient support so families can
-                plan confidently.
+              <p className="mt-2 text-lg italic font-semibold text-purple-600">
+                Empowering Every Cancer Journey with Intelligence, Care &
+                Confidence.
               </p>
+
+              <div className="w-32 h-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 my-4 mx-auto lg:mx-0"></div>
+
+              <p className="text-gray-700 text-lg leading-8">
+                PreCare is an AI-powered healthcare platform designed to
+                simplify cancer treatment planning for patients and their
+                families. Our platform combines intelligent treatment cost
+                prediction, trusted hospital recommendations, detailed cost
+                insights, and awareness resources to support informed medical
+                and financial decisions. We strive to make quality cancer care
+                more transparent, accessible, and patient-centric.
+              </p>
+
             </div>
+
           </div>
+
         </motion.div>
 
-        {/* --- Cancer Treatment Impact Section --- */}
+        {/* ---------------- CANCER TREATMENT IMPACT ---------------- */}
+
         <section className="rounded-2xl bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-8 shadow-lg">
+
           <motion.h3
             initial={{ opacity: 0, y: -10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -233,169 +316,514 @@ const About = () => {
           >
             Cancer Treatment Impact in India
           </motion.h3>
+
           <div className="w-28 h-1 bg-gradient-to-r from-green-500 to-purple-600 mx-auto my-4 rounded-full"></div>
+                    {/* ---------- Statistics ---------- */}
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-            <StatCard label="Patients Treated" value={patientsTreated} color="purple" />
-            <StatCard label="New Cases" value={newCases} color="indigo" />
-            <StatCard label="Centers" value={cancerCenters} color="green" />
-            <StatCard label="Success Rate" value={`${successRate}%`} color="pink" />
-            <StatCard label="Funding (Cr)" value={`₹${researchFunding}`} color="orange" />
-            <StatCard label="Oncologists" value={oncologists} color="teal" />
-          </div>
 
-
-        
-        
-            <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-
-            {/* ✅ MAP SECTION */}
-            
-            
-              <div className="w-full lg:w-[500px] h-[420px] bg-white rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-            
-            <IndiaMap
-              ref={mapRef}
-             className="w-full max-w-[320px]" 
+            <StatCard
+              label="Patients Treated"
+              value={patientsTreated}
+              color="purple"
             />
 
-              {/* Selected State Info */}
+            <StatCard
+              label="New Cases"
+              value={newCases}
+              color="indigo"
+            />
+
+            <StatCard
+              label="Centers"
+              value={cancerCenters}
+              color="green"
+            />
+
+            <StatCard
+              label="Success Rate"
+              value={`${successRate}%`}
+              color="pink"
+            />
+
+            <StatCard
+              label="Funding (Cr)"
+              value={`₹${researchFunding}`}
+              color="orange"
+            />
+
+            <StatCard
+              label="Oncologists"
+              value={oncologists}
+              color="teal"
+            />
+
+          </div>
+
+          {/* ---------- India Map ---------- */}
+
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
+
+            <div className="w-full lg:w-[500px] h-[420px] bg-white rounded-xl shadow-lg p-4 flex flex-col items-center justify-center">
+
+              <IndiaMap
+                ref={mapRef}
+                className="w-full max-w-[320px]"
+              />
+
               {selectedState && (
-                <div className="mt-4 p-3 bg-indigo-100 rounded-lg text-center">
-                  <strong>{selectedState}</strong> has{" "}
-                  {stateMarkers.find(s => s.state === selectedState)?.centers} cancer centers
-                </div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 bg-indigo-100 rounded-lg px-4 py-3 text-center shadow"
+                >
+
+                  <strong className="text-indigo-700">
+                    {selectedState}
+                  </strong>
+
+                  <p className="text-gray-700 mt-1">
+                    This state has{" "}
+                    <span className="font-bold text-indigo-700">
+                      {
+                        stateMarkers.find(
+                          (s) => s.state === selectedState
+                        )?.centers
+                      }
+                    </span>{" "}
+                    registered cancer centers.
+                  </p>
+
+                </motion.div>
+
               )}
 
             </div>
 
-            {/* ✅ STATE LIST */}
-              <div className="w-full lg:w-[300px] h-[420px] bg-white rounded-xl p-4 shadow-md flex flex-col">
+            {/* ---------- State List ---------- */}
+
+            <div className="w-full lg:w-[300px] h-[420px] bg-white rounded-xl shadow-lg p-4 flex flex-col">
+
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search state..."
-                className="w-full px-3 py-2 border rounded-lg mb-3 focus:ring-2 focus:ring-purple-300"
+                placeholder="Search State..."
+                className="border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-indigo-300 outline-none"
               />
 
               <div
                 ref={stateListRef}
                 className="flex-1 overflow-y-auto divide-y"
               >
+
                 {filteredStates.map((s) => (
+
                   <button
                     key={s.state}
                     data-state={s.state}
                     onClick={() => handleSelectState(s.state)}
-                    className={`w-full px-3 py-2 flex justify-between hover:bg-indigo-50 ${
-                      selectedState === s.state ? "bg-indigo-100" : ""
+                    className={`w-full flex justify-between px-3 py-2 transition hover:bg-indigo-50 ${
+                      selectedState === s.state
+                        ? "bg-indigo-100 font-semibold"
+                        : ""
                     }`}
                   >
+
                     <span>{s.state}</span>
-                    <span>{s.centers} centers</span>
+
+                    <span className="text-indigo-700">
+                      {s.centers}
+                    </span>
+
                   </button>
+
                 ))}
+
               </div>
 
             </div>
+
           </div>
-          
-         
+
         </section>
+        {/* ---------------- OUR SERVICES ---------------- */}
 
-        {/* --- Benefits of Treatment --- */}
-        <section className="bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 rounded-2xl p-10 shadow-lg">
-          <h3 className="text-3xl font-bold text-indigo-800 text-center">
-            Benefits of Our Treatment
-          </h3>
-          <div className="w-28 h-1 bg-gradient-to-r from-purple-500 to-pink-600 mx-auto my-4 rounded-full"></div>
+<section className="rounded-2xl p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 shadow-lg">
 
-          <div className="flex flex-col md:flex-row items-center justify-between mt-12 gap-10 relative">
-            {[
-              { step: "Early Detection", icon: Activity },
-              { step: "Personalized Plans", icon: Users },
-              { step: "Advanced Technology", icon: CheckCircle },
-              { step: "Improved Recovery", icon: Heart },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                whileHover={{ scale: 1.1 }}
-                className="flex flex-col items-center text-center relative z-10"
-              >
-                <div className="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-                  <item.icon className="w-8 h-8" />
-                </div>
-                <p className="mt-3 text-indigo-700 font-semibold">{item.step}</p>
-              </motion.div>
-            ))}
+  <h3 className="text-3xl font-bold text-indigo-800 text-center mb-2">
+    Our Services
+  </h3>
 
-            {/* Animated Lines */}
-            <div className="hidden md:flex absolute top-[60px] left-0 right-0 justify-between px-24 z-0">
-              {[...Array(3)].map((_, idx) => (
-                <div
-                  key={idx}
-                  className="w-1/4 h-1 rounded-full bg-gradient-to-r from-indigo-400 via-pink-400 to-indigo-400 animate-shimmer"
-                ></div>
-              ))}
-            </div>
-          </div>
-        </section>
+  <p className="text-center text-gray-600 mb-8">
+    Intelligent healthcare solutions designed to simplify cancer treatment planning.
+  </p>
 
-        {/* --- Our Services --- */}
-        <section className="rounded-2xl p-8 bg-gradient-to-br from-blue-50 to-purple-50 shadow-md">
-          <h3 className="text-3xl font-bold text-indigo-800 text-center mb-6">
-            Our Services
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ServiceCard icon={CheckCircle} title="AI Predictions" text="Accurate AI-driven cost estimation." />
-            <ServiceCard icon={Users} title="Trusted Doctors" text="Network of verified specialists." />
-            <ServiceCard icon={BarChart3} title="Cost Insights" text="Visual breakdowns and reports." />
-            <ServiceCard icon={Shield} title="Secure Platform" text="Patient privacy ensured." />
-          </div>
-        </section>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {/* --- Why Choose Us --- */}
-        <section className="rounded-2xl p-8 bg-gradient-to-br from-indigo-50 to-pink-50 shadow-md">
-          <h3 className="text-3xl font-bold text-indigo-800 text-center mb-6">
-            Why Choose Us
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <WhyCard icon={HeartPulse} text="Patient-first approach with 24/7 care." />
-            <WhyCard icon={Stethoscope} text="Experienced oncologists & specialists." />
-            <WhyCard icon={Award} text="Recognized by top medical institutions." />
-          </div>
-        </section>
+    {/* AI Prediction */}
+
+    <div className="relative">
+
+      {activeService === "prediction" && (
+
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute -top-56 left-0 right-0 bg-white rounded-xl shadow-2xl border border-indigo-200 p-5 z-20"
+        >
+
+          <button
+            onClick={() => setActiveService(null)}
+            className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-red-500"
+          >
+            ×
+          </button>
+
+          <h4 className="font-bold text-indigo-700 mb-2">
+            {servicesData.prediction.title}
+          </h4>
+
+          <p className="text-gray-600 text-sm leading-6">
+            {servicesData.prediction.description}
+          </p>
+
+        </motion.div>
+
+      )}
+
+      <ServiceCard
+        icon={CheckCircle}
+        title="AI Cost Prediction"
+        text="Predict cancer treatment expenses using AI-powered technology."
+        onClick={() =>
+          setActiveService(
+            activeService === "prediction" ? null : "prediction"
+          )
+        }
+      />
+
+    </div>
+
+    {/* Hospital */}
+
+    <div className="relative">
+
+      {activeService === "hospital" && (
+
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute -top-56 left-0 right-0 bg-white rounded-xl shadow-2xl border border-indigo-200 p-5 z-20"
+        >
+
+          <button
+            onClick={() => setActiveService(null)}
+            className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-red-500"
+          >
+            ×
+          </button>
+
+          <h4 className="font-bold text-indigo-700 mb-2">
+            {servicesData.hospital.title}
+          </h4>
+
+          <p className="text-gray-600 text-sm leading-6">
+            {servicesData.hospital.description}
+          </p>
+
+        </motion.div>
+
+      )}
+
+      <ServiceCard
+        icon={Users}
+        title="Hospital Recommendation"
+        text="Discover trusted hospitals based on treatment requirements and location."
+        onClick={() =>
+          setActiveService(
+            activeService === "hospital" ? null : "hospital"
+          )
+        }
+      />
+
+    </div>
+
+    {/* Cost Insights */}
+
+    <div className="relative">
+
+      {activeService === "insights" && (
+
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute -top-56 left-0 right-0 bg-white rounded-xl shadow-2xl border border-indigo-200 p-5 z-20"
+        >
+
+          <button
+            onClick={() => setActiveService(null)}
+            className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-red-500"
+          >
+            ×
+          </button>
+
+          <h4 className="font-bold text-indigo-700 mb-2">
+            {servicesData.insights.title}
+          </h4>
+
+          <p className="text-gray-600 text-sm leading-6">
+            {servicesData.insights.description}
+          </p>
+
+        </motion.div>
+
+      )}
+
+      <ServiceCard
+        icon={BarChart3}
+        title="Treatment Cost Insights"
+        text="Visualize treatment expenses through detailed reports and analytics."
+        onClick={() =>
+          setActiveService(
+            activeService === "insights" ? null : "insights"
+          )
+        }
+      />
+
+    </div>
+
+    {/* Awareness */}
+
+    <div className="relative">
+
+      {activeService === "awareness" && (
+
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute -top-56 left-0 right-0 bg-white rounded-xl shadow-2xl border border-indigo-200 p-5 z-20"
+        >
+
+          <button
+            onClick={() => setActiveService(null)}
+            className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-red-500"
+          >
+            ×
+          </button>
+
+          <h4 className="font-bold text-indigo-700 mb-2">
+            {servicesData.awareness.title}
+          </h4>
+
+          <p className="text-gray-600 text-sm leading-6">
+            {servicesData.awareness.description}
+          </p>
+
+        </motion.div>
+
+      )}
+
+      <ServiceCard
+        icon={Shield}
+        title="Cancer Awareness"
+        text="Learn about prevention, symptoms, treatments, and patient guidance."
+        onClick={() =>
+          setActiveService(
+            activeService === "awareness" ? null : "awareness"
+          )
+        }
+      />
+
+    </div>
+
+  </div>
+
+</section>
+{/* ---------------- WHY CHOOSE US ---------------- */}
+
+<section className="rounded-2xl p-8 bg-gradient-to-br from-indigo-50 via-white to-pink-50 shadow-lg">
+
+  <h3 className="text-3xl font-bold text-indigo-800 text-center mb-2">
+    Why Choose PreCare?
+  </h3>
+
+  <p className="text-center text-gray-600 mb-8">
+    Empowering patients with intelligent, reliable, and transparent healthcare solutions.
+  </p>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <WhyCard
+      icon={CheckCircle}
+      title="AI-Powered Predictions"
+      text="Our advanced AI models estimate cancer treatment costs with high accuracy, helping patients plan their healthcare finances before treatment begins."
+    />
+
+    <WhyCard
+      icon={Users}
+      title="Trusted Hospital Network"
+      text="Receive personalized hospital recommendations based on treatment specialization, affordability, quality of care, and your preferred location."
+    />
+
+    <WhyCard
+      icon={Shield}
+      title="Reliable Patient Support"
+      text="PreCare prioritizes patient guidance, secure healthcare information, awareness resources, and transparent decision-making throughout the treatment journey."
+    />
+
+  </div>
+
+</section>
+        {/* ---------- END OF MAIN CONTENT ---------- */}
+
       </div>
     </section>
   );
 };
 
-/* --- Helper Components --- */
+/* ============================================================
+                    HELPER COMPONENTS
+============================================================ */
+/* ============================================================
+                    HELPER COMPONENTS
+============================================================ */
+
+const colorMap = {
+  purple: "text-purple-600",
+  indigo: "text-indigo-600",
+  green: "text-green-600",
+  pink: "text-pink-600",
+  orange: "text-orange-600",
+  teal: "text-teal-600",
+};
+
+/* ---------- Stat Card ---------- */
+
 const StatCard = ({ label, value, color }) => (
-  <motion.div whileHover={{ scale: 1.05 }} className="bg-white p-4 rounded-xl shadow text-center">
-    <div className={`text-2xl font-bold text-${color}-600`}>{value}+</div>
-    <div className="text-sm text-gray-600">{label}</div>
+  <motion.div
+    initial={{
+      opacity: 0,
+      scale: 0.9,
+    }}
+    whileInView={{
+      opacity: 1,
+      scale: 1,
+    }}
+    whileHover={{
+      y: -8,
+      scale: 1.05,
+      boxShadow: "0px 18px 35px rgba(79,70,229,0.20)",
+    }}
+    viewport={{ once: true }}
+    transition={{
+      duration: 0.8,
+      type: "spring",
+    }}
+    className="cursor-pointer rounded-xl bg-white p-5 shadow-lg"
+  >
+    <div className={`text-3xl font-bold ${colorMap[color]}`}>
+      {value}
+    </div>
+
+    <div className="mt-2 text-gray-600 font-medium">
+      {label}
+    </div>
   </motion.div>
 );
 
-const ServiceCard = ({ icon: Icon, title, text }) => (
-  <div className="rounded-xl bg-white p-6 shadow-sm">
-    <div className="flex items-center gap-3">
-      <Icon className="w-6 h-6 text-indigo-600" />
-      <div>
-        <div className="font-semibold text-indigo-800">{title}</div>
-        <div className="text-sm text-gray-600">{text}</div>
+/* ---------- Service Card ---------- */
+
+const ServiceCard = ({
+  icon: Icon,
+  title,
+  text,
+  onClick,
+}) => (
+  <motion.div
+    whileHover={{
+      y: -8,
+      scale: 1.04,
+      boxShadow: "0px 18px 35px rgba(79,70,229,0.18)",
+    }}
+    whileTap={{
+      scale: 0.97,
+    }}
+    transition={{
+      duration: 0.25,
+    }}
+    onClick={onClick}
+    className="cursor-pointer rounded-xl border border-transparent bg-white p-6 shadow-md hover:border-indigo-300"
+  >
+    <div className="flex items-start gap-4">
+
+      <div className="rounded-full bg-indigo-100 p-3">
+
+        <Icon className="h-7 w-7 text-indigo-700" />
+
       </div>
+
+      <div className="flex-1">
+
+        <h4 className="text-lg font-bold text-indigo-800">
+          {title}
+        </h4>
+
+        <p className="mt-2 text-gray-600 leading-6">
+          {text}
+        </p>
+
+        <div className="mt-4 text-sm font-semibold text-indigo-600">
+          Click to know more →
+        </div>
+
+      </div>
+
     </div>
-  </div>
+  </motion.div>
+);
+/* ---------- Why Choose Card ---------- */
+
+const WhyCard = ({ icon: Icon, title, text }) => (
+  <motion.div
+    whileHover={{
+      y: -10,
+      scale: 1.05,
+      boxShadow: "0px 20px 40px rgba(79,70,229,0.25)",
+    }}
+    whileTap={{
+      scale: 0.98,
+    }}
+    transition={{
+      duration: 0.3,
+    }}
+    className="rounded-xl bg-white p-6 text-center border border-transparent hover:border-indigo-300 cursor-pointer"
+  >
+    <motion.div
+      whileHover={{
+        rotate: 12,
+        scale: 1.15,
+      }}
+      transition={{
+        duration: 0.3,
+      }}
+      className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100"
+    >
+      <Icon className="h-8 w-8 text-indigo-700" />
+    </motion.div>
+
+    <h4 className="mb-3 text-xl font-bold text-indigo-800">
+      {title}
+    </h4>
+
+    <p className="leading-7 text-gray-600">
+      {text}
+    </p>
+  </motion.div>
 );
 
-const WhyCard = ({ icon: Icon, text }) => (
-  <div className="rounded-xl bg-white p-6 shadow-sm text-center">
-    <Icon className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
-    <p className="text-gray-700">{text}</p>
-  </div>
-);
+/* ============================================================
+                        EXPORT
+============================================================ */
 
 export default About;

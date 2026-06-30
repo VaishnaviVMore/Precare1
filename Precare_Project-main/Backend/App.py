@@ -3,7 +3,7 @@ from flask_cors import CORS
 import pandas as pd
 import joblib
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timezone   # ✅ FIXED HERE
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -94,7 +94,6 @@ def google_login():
         data = request.get_json()
         token = data.get("token")
 
-        # ⚠️ Simplified (no verification)
         user = {
             "username": "GoogleUser",
             "email": "googleuser@gmail.com"
@@ -112,18 +111,12 @@ def predict():
     try:
         data = request.get_json(force=True)
 
-        # -----------------------------
-        # Input handling
-        # -----------------------------
         age = int(data.get("age"))
 
         gender = data.get("gender").strip().capitalize()
         cancer_type = data.get("cancer_type").strip().capitalize()
         cancer_stage = data.get("cancer_stage")
 
-        # -----------------------------
-        # Stage mapping
-        # -----------------------------
         stage_map = {
             "Stage I": 1,
             "Stage II": 2,
@@ -133,19 +126,14 @@ def predict():
 
         stage_num = stage_map.get(cancer_stage, 1)
 
-        # -----------------------------
-        # Create dataframe
-        # -----------------------------
         df = pd.DataFrame(0, index=[0], columns=feature_columns)
 
-        # Numeric features
         if "age" in df.columns:
             df["age"] = age
 
         if "cancer_stage" in df.columns:
             df["cancer_stage"] = stage_num
 
-        # One-hot encoding
         gender_col = f"gender_{gender}"
         cancer_col = f"cancer_type_{cancer_type}"
 
@@ -155,22 +143,16 @@ def predict():
         if cancer_col in df.columns:
             df[cancer_col] = 1
 
-        # -----------------------------
-        # Prediction
-        # -----------------------------
         prediction = model.predict(df)[0]
         estimated_cost = round(float(prediction), 2)
 
-        # -----------------------------
-        # Save prediction (without smoking)
-        # -----------------------------
         predictions_collection.insert_one({
             "age": age,
             "gender": gender,
             "cancer_type": cancer_type,
             "cancer_stage": cancer_stage,
             "predicted_cost": estimated_cost,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.now(timezone.utc)   # ✅ FIXED HERE
         })
 
         return jsonify({
@@ -181,7 +163,6 @@ def predict():
         return jsonify({"error": str(e)}), 400
 
 
-# ========== HISTORY ==========
 @app.route("/history", methods=["GET"])
 def history():
     try:
@@ -190,7 +171,5 @@ def history():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# ========== RUN ==========
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False, use_reloader=False)  

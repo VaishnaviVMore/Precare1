@@ -31,30 +31,30 @@ function Login({ setUser }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    try {
-      const res = await axios.post("http://localhost:5000/api/login", {
-        identifier: form.identifier,
-        password: form.password,
-      });
+  try {
+    const res = await axios.post("http://localhost:5000/api/login", {
+      identifier: form.identifier,
+      password: form.password,
+    });
 
-      setUser(res.data.user);
+    setUser(res.data.user);
 
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-      }
-
-      navigate("/home");
-    } catch (err) {
-      setError(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Login failed"
-      );
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
     }
-  };
+
+    navigate("/home");
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      "Login failed"
+    );
+  }
+};
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
@@ -144,14 +144,14 @@ function Login({ setUser }) {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <input
-              type="text"
-              name="identifier"
-              placeholder="Email address or username"
-              value={form.identifier}
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
-              required
-            />
+                type="email"
+                name="identifier"
+                placeholder="Email address"
+                value={form.identifier}
+                onChange={handleChange}
+                className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
 
             <div className="relative">
               <input
@@ -185,11 +185,7 @@ function Login({ setUser }) {
                 Remember me
               </label>
 
-              <Link to="/forget-password" className="text-blue-700">
-                Forget password
-              </Link>
             </div>
-
             <button
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-full"

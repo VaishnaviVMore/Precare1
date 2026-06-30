@@ -71,9 +71,17 @@ const Contact = () => {
             </p>
 
             <p className="text-gray-700">
-              <span className="font-bold text-purple-700">📧 Email:</span><br />
-              support@precared.com
-            </p>
+             <span className="font-bold text-purple-700">📧 Email:</span>
+                <br />
+                <a
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=supportprecare@gmail.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200"
+                >
+                  supportprecare@gmail.com
+                </a>
+                </p>
 
             <p className="flex items-center gap-2 text-gray-700">
               <Instagram className="text-pink-500" size={18} />

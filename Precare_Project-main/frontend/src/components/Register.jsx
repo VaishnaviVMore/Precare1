@@ -30,37 +30,48 @@ function Register({ setUser }) {
   };
 
   // ✅ Manual Register
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
 
-    if (!form.agreeTerms) {
-      setError("You must agree to the terms and privacy policy.");
+      // ✅ Strict Email Validation
+    const email = form.email.trim();
+
+    const emailRegex =
+      /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9]+([._%+-]?[a-z0-9]+)*@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
-    try {
-      const res = await axios.post("http://localhost:5000/api/register", {
-        username: form.username,
-        email: form.email,
-        password: form.password,
-      });
+  if (!form.agreeTerms) {
+    setError("You must agree to the terms and privacy policy.");
+    return;
+  }
 
-      setUser(res.data.user);
+  try {
+    const res = await axios.post("http://localhost:5000/api/register", {
+      username: form.username,
+      email: form.email,
+      password: form.password,
+    });
 
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-      }
+    setUser(res.data.user);
 
-      navigate("/");
-    } catch (err) {
-      setError(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Registration failed"
-      );
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
     }
-  };
+
+    navigate("/");
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      "Registration failed"
+    );
+  }
+};
 
   // ✅ Google Register/Login
   const handleGoogleLoginSuccess = async (credentialResponse) => {
@@ -97,12 +108,12 @@ function Register({ setUser }) {
       {/* Right Section */}
       <div className="w-1/2 h-full flex items-center justify-center bg-gradient-to-r from-[#01030a] via-[#081a3a] to-[#dbeafe]">
 
-        <div className="w-full max-w-md bg-white border border-blue-200 rounded-2xl p-10 shadow-xl">
+        <div className="w-full max-w-md bg-white border border-blue-200 rounded-2xl p-7 shadow-xl">
 
         
           {/* Logo */}
             <div className="flex justify-center mb-3">
-                      <img src={logo} alt="logo" className="w-20 h-20 rounded-full" />
+                      <img src={logo} alt="logo" className="w-16 h-16 rounded-full" />
             </div>
 
           <h2 className="text-3xl font-semibold mb-6 text-center text-blue-800">
@@ -130,7 +141,7 @@ function Register({ setUser }) {
             <input
               type="email"
               name="email"
-              placeholder="Email"
+              placeholder="Email address"
               value={form.email}
               onChange={handleChange}
               className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -185,7 +196,7 @@ function Register({ setUser }) {
           </form>
 
           {/* Divider */}
-          <div className="flex items-center my-6">
+          <div className="flex items-center my-4">
             <hr className="flex-grow border-gray-300" />
             <span className="px-3 text-gray-400 text-sm">OR</span>
             <hr className="flex-grow border-gray-300" />
